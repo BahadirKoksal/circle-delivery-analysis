@@ -1,0 +1,43 @@
+-- ============================================
+-- STEP 4: KPI Calculations
+-- Add delivery time metrics to cc_parcel_kpi
+-- shipping_time, delivery_time, total_time
+-- ============================================
+
+-- Add three KPI columns using DATE_DIFF
+-- SAFE.PARSE_DATE used to safely handle NULL dates
+CREATE OR REPLACE TABLE course15.cc_parcel_kpi AS
+SELECT
+  parcel_id,
+  parcel_tracking,
+  transporter,
+  priority,
+  PARSE_DATE("%B %e, %Y", date_purchase)  AS date_purchase,
+  PARSE_DATE("%B %e, %Y", date_shipping)  AS date_shipping,
+  PARSE_DATE("%B %e, %Y", date_delivery)  AS date_delivery,
+  PARSE_DATE("%B %e, %Y", date_cancelled) AS date_cancelled,
+  CASE
+    WHEN date_cancelled IS NOT NULL THEN 'Cancelled'
+    WHEN date_shipping  IS NULL     THEN 'In Progress'
+    WHEN date_delivery  IS NULL     THEN 'In Transit'
+    WHEN date_delivery  IS NOT NULL THEN 'Delivered'
+    ELSE NULL
+  END AS status,
+  DATE_DIFF(
+    SAFE.PARSE_DATE("%B %e, %Y", date_shipping),
+    SAFE.PARSE_DATE("%B %e, %Y", date_purchase), DAY
+  ) AS shipping_time,
+  DATE_DIFF(
+    SAFE.PARSE_DATE("%B %e, %Y", date_delivery),
+    SAFE.PARSE_DATE("%B %e, %Y", date_shipping), DAY
+  ) AS delivery_time,
+  DATE_DIFF(
+    SAFE.PARSE_DATE("%B %e, %Y", date_delivery),
+    SAFE.PARSE_DATE("%B %e, %Y", date_purchase), DAY
+  ) AS total_time
+FROM course15.cc_parcel;
+
+-- Verify KPI columns
+SELECT *
+FROM course15.cc_parcel_kpi
+LIMIT 10;
