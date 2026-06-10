@@ -1,0 +1,105 @@
+-- ============================================
+-- STEP 5: Aggregate Analysis
+-- Global, transporter, priority, monthly KPIs
+-- ============================================
+
+
+-- ----------------------------------------
+-- 5.1 Global averages
+-- ----------------------------------------
+CREATE OR REPLACE TABLE course15.cc_parcel_kpi_global AS
+SELECT
+  COUNT(*)                        AS nb_parcel,
+  ROUND(AVG(shipping_time), 2)    AS shipping_time,
+  ROUND(AVG(delivery_time), 2)    AS delivery_time,
+  ROUND(AVG(total_time),    2)    AS total_time
+FROM course15.cc_parcel_kpi;
+
+SELECT * FROM course15.cc_parcel_kpi_global;
+
+
+-- ----------------------------------------
+-- 5.2 KPIs by transporter
+-- ----------------------------------------
+CREATE OR REPLACE TABLE course15.cc_parcel_kpi_transporter AS
+SELECT
+  transporter,
+  COUNT(*)                        AS nb_parcel,
+  ROUND(AVG(shipping_time), 2)    AS shipping_time,
+  ROUND(AVG(delivery_time), 2)    AS delivery_time,
+  ROUND(AVG(total_time),    2)    AS total_time
+FROM course15.cc_parcel_kpi
+GROUP BY transporter;
+
+SELECT * FROM course15.cc_parcel_kpi_transporter;
+
+
+-- ----------------------------------------
+-- 5.3 KPIs by priority level
+-- Includes ratio: shipping_time / total_time
+-- ----------------------------------------
+CREATE OR REPLACE TABLE course15.cc_parcel_kpi_priority AS
+SELECT
+  priority,
+  COUNT(*)                        AS nb_parcel,
+  ROUND(AVG(shipping_time), 2)    AS shipping_time,
+  ROUND(AVG(delivery_time), 2)    AS delivery_time,
+  ROUND(AVG(total_time),    2)    AS total_time,
+  SAFE_DIVIDE(
+    ROUND(AVG(shipping_time), 2),
+    ROUND(AVG(total_time),    2)
+  )                               AS ratio_shipping_total
+FROM course15.cc_parcel_kpi
+GROUP BY priority;
+
+SELECT * FROM course15.cc_parcel_kpi_priority;
+
+
+-- ----------------------------------------
+-- 5.4 Monthly trend analysis
+-- Add month_purchase column, then aggregate
+-- ----------------------------------------
+
+-- Row-level table with month column
+CREATE OR REPLACE TABLE course15.cc_parcel_kpi_month AS
+SELECT
+  parcel_id,
+  parcel_tracking,
+  transporter,
+  priority,
+  PARSE_DATE("%B %e, %Y", date_purchase)  AS date_purchase,
+  PARSE_DATE("%B %e, %Y", date_shipping)  AS date_shipping,
+  PARSE_DATE("%B %e, %Y", date_delivery)  AS date_delivery,
+  PARSE_DATE("%B %e, %Y", date_cancelled) AS date_cancelled,
+  EXTRACT(MONTH FROM PARSE_DATE("%B %e, %Y", date_purchase)) AS month_purchase,
+  CASE
+    WHEN date_cancelled IS NOT NULL THEN 'Cancelled'
+    WHEN date_shipping  IS NULL     THEN 'In Progress'
+    WHEN date_delivery  IS NULL     THEN 'In Transit'
+    WHEN date_delivery  IS NOT NULL THEN 'Delivered'
+    ELSE NULL
+  END AS status,
+  DATE_DIFF(
+    SAFE.PARSE_DATE("%B %e, %Y", date_shipping),
+    SAFE.PARSE_DATE("%B %e, %Y", date_purchase), DAY
+  ) AS shipping_time,
+  DATE_DIFF(
+    SAFE.PARSE_DATE("%B %e, %Y", date_delivery),
+    SAFE.PARSE_DATE("%B %e, %Y", date_shipping), DAY
+  ) AS delivery_time,
+  DATE_DIFF(
+    SAFE.PARSE_DATE("%B %e, %Y", date_delivery),
+    SAFE.PARSE_DATE("%B %e, %Y", date_purchase), DAY
+  ) AS total_time
+FROM course15.cc_parcel;
+
+-- Monthly aggregation
+SELECT
+  month_purchase,
+  COUNT(*)                        AS nb_parcel,
+  ROUND(AVG(shipping_time), 2)    AS shipping_time,
+  ROUND(AVG(delivery_time), 2)    AS delivery_time,
+  ROUND(AVG(total_time),    2)    AS total_time
+FROM course15.cc_parcel_kpi_month
+GROUP BY month_purchase
+ORDER BY month_purchase;
