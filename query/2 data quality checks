@@ -1,0 +1,28 @@
+-- ============================================
+-- STEP 2: Data Quality Checks
+-- Validate primary keys in both tables
+-- ============================================
+
+-- Check: is parcel_id unique in cc_parcel? (PK test)
+-- Expected result: no rows returned
+SELECT parcel_id, COUNT(*) AS nb
+FROM course15.cc_parcel
+GROUP BY parcel_id
+HAVING nb >= 2
+ORDER BY nb DESC;
+
+-- Check: parcel_id is NOT unique in cc_parcel_product
+-- One parcel can contain multiple products
+SELECT parcel_id, COUNT(*) AS nb
+FROM course15.cc_parcel_product
+GROUP BY parcel_id
+HAVING nb >= 2
+ORDER BY nb DESC;
+
+-- Check: composite key (parcel_id + model_name) in cc_parcel_product
+-- Expected result: no rows returned
+SELECT parcel_id, model_name, COUNT(*) AS nb
+FROM course15.cc_parcel_product
+GROUP BY parcel_id, model_name
+HAVING nb >= 2
+ORDER BY nb DESC;
