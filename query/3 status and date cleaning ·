@@ -1,0 +1,56 @@
+-- ============================================
+-- STEP 3: Status Column + Date Cleaning
+-- Derive delivery status using CASE WHEN
+-- Convert date columns from STRING to DATE
+-- Save as cc_parcel_kpi
+-- ============================================
+
+-- First version: status only (no date conversion yet)
+-- Used to validate CASE WHEN logic
+CREATE OR REPLACE TABLE course15.cc_parcel_kpi AS
+SELECT
+  parcel_id,
+  parcel_tracking,
+  transporter,
+  priority,
+  date_purchase,
+  date_shipping,
+  date_delivery,
+  date_cancelled,
+  CASE
+    WHEN date_cancelled IS NOT NULL THEN 'Cancelled'
+    WHEN date_shipping  IS NULL     THEN 'In Progress'
+    WHEN date_delivery  IS NULL     THEN 'In Transit'
+    WHEN date_delivery  IS NOT NULL THEN 'Delivered'
+    ELSE NULL
+  END AS status
+FROM course15.cc_parcel;
+
+-- ⚠️ Issue found: date columns were stored as STRING, not DATE type
+-- Fix: convert using PARSE_DATE
+-- Note: correct format is "%B %e, %Y" (space after %e) — "%B %e,%Y" fails
+
+-- Final version: status + proper DATE types
+CREATE OR REPLACE TABLE course15.cc_parcel_kpi AS
+SELECT
+  parcel_id,
+  parcel_tracking,
+  transporter,
+  priority,
+  PARSE_DATE("%B %e, %Y", date_purchase)  AS date_purchase,
+  PARSE_DATE("%B %e, %Y", date_shipping)  AS date_shipping,
+  PARSE_DATE("%B %e, %Y", date_delivery)  AS date_delivery,
+  PARSE_DATE("%B %e, %Y", date_cancelled) AS date_cancelled,
+  CASE
+    WHEN date_cancelled IS NOT NULL THEN 'Cancelled'
+    WHEN date_shipping  IS NULL     THEN 'In Progress'
+    WHEN date_delivery  IS NULL     THEN 'In Transit'
+    WHEN date_delivery  IS NOT NULL THEN 'Delivered'
+    ELSE NULL
+  END AS status
+FROM course15.cc_parcel;
+
+-- Verify the result
+SELECT *
+FROM course15.cc_parcel_kpi
+LIMIT 10;
