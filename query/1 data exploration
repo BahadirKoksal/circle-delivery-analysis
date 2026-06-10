@@ -1,0 +1,14 @@
+-- ============================================
+-- STEP 1: Data Exploration
+-- Preview both tables to understand structure
+-- ============================================
+
+-- Preview parcel table
+SELECT *
+FROM course15.cc_parcel
+LIMIT 10;
+
+-- Preview parcel product table
+SELECT *
+FROM course15.cc_parcel_product
+LIMIT 10;
