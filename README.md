@@ -166,4 +166,4 @@ course15/
 
 ---
 
-*Project completed as part of the Workintech Data Analytics program.*
+
